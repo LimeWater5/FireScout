@@ -9,90 +9,139 @@
       html, body { height:100%; margin:0; }
       #viewDiv { height:100vh; width:100%; }
 
-      /* Credit box, Firewatch logo, white FR on #991a3f */
+      /* Credit badge */
       #credit {
-        position:absolute;
-        top:12px; right:12px;
-        background:#991a3f;
-        color:#fff;
-        padding:6px 10px;
-        border-radius:8px;
+        background:#991a3f; color:#fff; padding:6px 10px; border-radius:8px;
         font:12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-        z-index:5;
-        box-shadow:0 1px 6px rgba(0,0,0,.18);
-        display:flex; align-items:center; gap:6px;
+        display:flex; align-items:center; gap:6px; user-select:none;
+        margin-top:-2px; margin-right:-2px;
+        box-shadow:0 2px 10px rgba(0,0,0,.28);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,.22));
       }
       #credit .brand {
-        font-size:13px;
-        font-weight:900;
-        text-transform:uppercase;
-        letter-spacing:.5px;
-        line-height:1;
+        font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; line-height:1;
         background:linear-gradient(90deg,#ff3b3b,#ff9a3b);
-        -webkit-background-clip:text;
-        background-clip:text;
-        color:transparent;
+        -webkit-background-clip:text; background-clip:text; color:transparent;
       }
-      #credit .by { color:#fff; font-weight:700; }
       #credit a { color:#fff; text-decoration:none; font-weight:700; }
+
+      /* Controls row, zoom then info button on the right */
+      #ctrlBar { display:flex; align-items:flex-start; gap:6px; }
+      #ctrlBar .esri-zoom { filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+      .esri-zoom .esri-widget--button { border-radius:10px; }
+
+      /* Info button */
+      #iBtn {
+        width:32px; height:32px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font:700 16px/1 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+        background:#fff; border:1px solid #e5e5e5; color:#333;
+        box-shadow:0 2px 8px rgba(0,0,0,.18);
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,.18));
+        cursor:pointer;
+      }
+      #iBtn:focus { outline:2px solid #991a3f44; outline-offset:2px; }
+
+      /* Info panel */
+      #infoPanel.esri-widget {
+        max-width:320px;
+        font:12px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+        background:#fff; border:1px solid #eee; border-radius:12px;
+        box-shadow:0 6px 16px rgba(0,0,0,.18);
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.2));
+        padding:10px;
+      }
+      #infoPanel h4{ margin:.2rem 0 .4rem; font-size:13px; font-weight:800; letter-spacing:.2px; }
+      .info-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+      .col-title{ font-size:11px; opacity:.7; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+      .info-grid .line{ margin:.22rem 0; line-height:1.3; }
+      .legend-row { display:flex; align-items:center; gap:8px; margin:4px 0; }
+      .chip { width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.15); box-shadow:0 1px 2px rgba(0,0,0,.18); }
+
+      @media (max-width:480px){
+        #infoPanel{ max-width:280px; }
+        .info-grid{ grid-template-columns:1fr; }
+      }
+
+      /* Last updated badge */
+      #lastUpdated {
+        font:11px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+        background:rgba(255,255,255,.9); border:1px solid #eee; border-radius:6px;
+        padding:4px 6px;
+        box-shadow:0 2px 6px rgba(0,0,0,.15);
+        filter: drop-shadow(0 1px 3px rgba(0,0,0,.15));
+      }
+
+      /* Cluster radius by viewport */
+      @media (max-width:680px){ :root { --cluster-radius: 28px; } }
+      @media (min-width:681px){ :root { --cluster-radius: 32px; } }
     </style>
     <script src="https://js.arcgis.com/4.33/"></script>
   </head>
   <body>
     <div id="viewDiv"></div>
 
-    <!-- credit -->
-    <div id="credit">
-      <span class="brand">Firewatch</span>
-      <span class="by">by <a href="https://www.financialreport.gr" target="_blank" rel="noopener">financialreport.gr</a></span>
+    <!-- Info panel, GR and EN side by side, no bullets -->
+    <div id="infoPanel" class="esri-widget" style="display:none">
+      <h4>Χάρτης φωτιάς | Fire map</h4>
+      <div class="info-grid">
+        <div>
+          <div class="col-title">GR</div>
+          <div class="line"><strong>Δεδομένα</strong>: Τελευταίων 24 ωρών από NASA VIIRS, παγκόσμια, αρχική εστίαση στην Ελλάδα.</div>
+          <div class="line"><strong>Μέγεθος κύκλου</strong>: μεγαλύτερος κύκλος σημαίνει ισχυρότερη ένταση, βασίζεται σε FRP ή φωτεινότητα.</div>
+          <div class="line"><strong>Χρώμα</strong>: πιο ζεστό χρώμα σημαίνει ισχυρότερη ένδειξη φωτιάς.</div>
+          <div class="line"><strong>Συμπύκνωση</strong>: κοντινά σημεία ομαδοποιούνται για καθαρό χάρτη.</div>
+          <div class="line"><strong>Σημείωση</strong>: μερικές ανιχνεύσεις μπορεί να είναι άλλες θερμές πηγές, παράδειγμα βιομηχανία, έλεγχος από τις αρχές.</div>
+        </div>
+        <div>
+          <div class="col-title">EN</div>
+          <div class="line"><strong>Data</strong>: Last 24 hours from NASA VIIRS, worldwide, initial focus on Greece.</div>
+          <div class="line"><strong>Circle size</strong>: larger circle means stronger intensity, based on FRP or brightness.</div>
+          <div class="line"><strong>Color</strong>: warmer color means a stronger fire signal.</div>
+          <div class="line"><strong>Clustering</strong>: nearby points are grouped for a cleaner map.</div>
+          <div class="line"><strong>Note</strong>: some detections can be other heat sources, example industry, verify with authorities.</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <div class="legend-row"><span class="chip" style="background:rgba(255,204,102,.95)"></span><span>χαμηλή ένταση | low</span></div>
+        <div class="legend-row"><span class="chip" style="background:rgba(255,140,66,.95)"></span><span>μέτρια | moderate</span></div>
+        <div class="legend-row"><span class="chip" style="background:rgba(240,72,48,.95)"></span><span>υψηλή | high</span></div>
+        <div class="legend-row"><span class="chip" style="background:rgba(200,30,30,.95)"></span><span>πολύ υψηλή | very high</span></div>
+      </div>
     </div>
 
     <script>
       require([
         "esri/Map",
         "esri/views/MapView",
-        "esri/layers/FeatureLayer"
-      ], function (Map, MapView, FeatureLayer) {
+        "esri/layers/FeatureLayer",
+        "esri/widgets/Zoom"
+      ], function (Map, MapView, FeatureLayer, Zoom) {
 
         const map = new Map({ basemap: "topo-vector" });
 
-        // Simple circles, big and warm color for stronger detections
-        const dotRenderer = {
+        /* Renderer, warm colors, size by FRP or brightness */
+        const renderer = {
           type: "simple",
-          symbol: {
-            type: "simple-marker",
-            style: "circle",
-            color: [230, 30, 30, 0.95],
-            size: 9,
-            outline: { color: [255,255,255,1], width: 0.6 }
-          },
+          symbol: { type: "simple-marker", style: "circle", color: [230,30,30,0.95], size: 9, outline: { color: [255,255,255,1], width: 0.6 } },
           visualVariables: [
-            {
-              type: "size",
+            { type: "size",
+              valueExpression: "IIF(IsEmpty($feature.frp), $feature.brightness, $feature.frp)",
+              stops: [ { value:5,size:8 }, { value:15,size:10 }, { value:30,size:12 }, { value:60,size:14 }, { value:120,size:18 } ] },
+            { type: "color",
               valueExpression: "IIF(IsEmpty($feature.frp), $feature.brightness, $feature.frp)",
               stops: [
-                { value: 5,   size: 8 },
-                { value: 15,  size: 10 },
-                { value: 30,  size: 12 },
-                { value: 60,  size: 14 },
-                { value: 120, size: 18 }
-              ]
-            },
-            {
-              type: "color",
-              valueExpression: "IIF(IsEmpty($feature.frp), $feature.brightness, $feature.frp)",
-              stops: [
-                { value: 5,   color: [255, 204, 102, 0.95] },  /* warm yellow */
-                { value: 30,  color: [255, 140,  66, 0.95] },  /* orange */
-                { value: 60,  color: [240,  72,  48, 0.95] },  /* red orange */
-                { value: 120, color: [200,  30,  30, 0.95] }   /* deep red */
-              ]
-            }
+                { value:5, color:[255,204,102,0.95] },
+                { value:30, color:[255,140, 66,0.95] },
+                { value:60, color:[240, 72, 48,0.95] },
+                { value:120, color:[200, 30, 30,0.95] }
+              ] }
           ]
         };
 
+        /* Layer, VIIRS hotspots */
         const viirs = new FeatureLayer({
-          portalItem: { id: "dece90af1a0242dcbf0ca36d30276aa3" }, // VIIRS Thermal Hotspots and Fire Activity
+          portalItem: { id: "dece90af1a0242dcbf0ca36d30276aa3" },
           outFields: ["acq_date","acq_time","brightness","frp","satellite","daynight","confidence"],
           popupTemplate: {
             title: "{satellite} hotspot",
@@ -105,35 +154,116 @@
               { fieldName: "confidence",label: "Confidence" }
             ]}]
           },
-          renderer: dotRenderer,
-          featureReduction: {
-            type: "cluster",
-            clusterRadius: "34px",
-            labelsVisible: false   // hide the numbers on clusters
-          },
-          refreshInterval: 10 // minutes
+          renderer,
+          featureReduction: { type: "cluster", clusterRadius: getComputedStyle(document.documentElement).getPropertyValue("--cluster-radius") || "32px", labelsVisible: false },
+          refreshInterval: 10
         });
 
         map.add(viirs);
 
+        /* View */
         const view = new MapView({
           container: "viewDiv",
           map,
           center: [23.7, 39.2],
-          zoom: 8,
+          zoom: 7,
           constraints: { minZoom: 5 }
         });
 
-        // Place credit in map UI
-        view.ui.add(document.getElementById("credit"), "top-right");
+        /* Credit in UI */
+        const creditEl = document.createElement("div");
+        creditEl.id = "credit";
+        creditEl.innerHTML = `
+          <a class="brand" href="https://www.financialreport.gr/firewatch" target="_blank" rel="noopener">Firewatch</a>
+          <span>by <a href="https://www.financialreport.gr" target="_blank" rel="noopener">financialreport.gr</a></span>
+        `;
+        view.ui.add(creditEl, "top-right");
 
-        // Show only last 24 hours, apply at the layer view level
-        view.whenLayerView(viirs).then(function(layerView){
-          const now = new Date();
-          const start = new Date(now.getTime() - 24*60*60*1000);
-          layerView.filter = { timeExtent: { start, end: now } };
+        /* Controls row, zoom then info button */
+        const bar = document.createElement("div");
+        bar.id = "ctrlBar"; bar.className = "esri-component";
+        const zoomSlot = document.createElement("div"); bar.appendChild(zoomSlot);
+        const iBtn = document.createElement("button");
+        iBtn.id = "iBtn"; iBtn.className = "esri-widget esri-interactive"; iBtn.type = "button";
+        iBtn.title = "Πληροφορίες, φωτιές"; iBtn.setAttribute("aria-controls", "infoPanel"); iBtn.textContent = "i";
+        bar.appendChild(iBtn);
+        view.ui.remove("zoom");
+        new Zoom({ view, container: zoomSlot });
+        view.ui.add(bar, "top-left");
+
+        /* Info panel toggle */
+        const infoPanel = document.getElementById("infoPanel");
+        infoPanel.style.display = "none";
+        view.ui.add(infoPanel, { position: "top-left", index: 1 });
+        iBtn.addEventListener("click", function(){
+          const on = infoPanel.style.display !== "none";
+          infoPanel.style.display = on ? "none" : "block";
         });
+        document.addEventListener("click", function(e){
+          if (!infoPanel.contains(e.target) && !iBtn.contains(e.target)) infoPanel.style.display = "none";
+        });
+
+        /* Last updated badge, Greek time, 24 hour clock */
+        const last = document.createElement("div");
+        last.id = "lastUpdated"; last.className = "esri-widget";
+        last.textContent = "Τελευταία ενημέρωση, φόρτωση";
+        view.ui.add(last, "bottom-right");
+
+        function setUpdatedNow(){
+          try {
+            const dt = new Intl.DateTimeFormat("el-GR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Athens", hour12: false }).format(new Date());
+            last.textContent = "Τελευταία ενημέρωση, " + dt;
+          } catch(e) {
+            last.textContent = "Τελευταία ενημέρωση, " + new Date().toLocaleString("el-GR");
+          }
+        }
+
+        /* Time filter, 24 hours, update on refresh */
+        view.whenLayerView(viirs).then(function(layerView){
+          const applyTime = () => {
+            const now = new Date();
+            const start = new Date(now.getTime() - 24*60*60*1000);
+            layerView.filter = { timeExtent: { start, end: now } };
+          };
+          applyTime();
+          layerView.watch("updating", function(isUpdating){
+            if (isUpdating) applyTime();
+            if (!isUpdating) setUpdatedNow();
+          });
+        }).catch(function(){
+          last.textContent = "Αδυναμία φόρτωσης δεδομένων";
+        });
+
+      }, function(err){
+        const m = "Αποτυχία φόρτωσης χαρτογραφικών modules";
+        console.error(m, err);
+        const warn = document.createElement("div");
+        warn.className = "esri-widget";
+        warn.style.cssText = "position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,.9);border:1px solid #eee;border-radius:6px;padding:4px 6px;font:11px system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;";
+        warn.textContent = m;
+        document.body.appendChild(warn);
       });
+    </script>
+
+    <!-- Logger, Google Apps Script Web App URL -->
+    <script>
+      (function(){
+        var url = "https://script.google.com/macros/s/AKfycbz5D_NmnaxxnuvyLaXszZX73DpZmPNah4_9qu6O1b5BQx0f9f00IBcvAwL3x6w3CC3l/exec";
+        if (!url || url.indexOf("http") !== 0) return;
+        var ref = document.referrer || "";
+        var host = "";
+        try { host = ref ? new URL(ref).hostname : ""; } catch(e){}
+        var payload = {
+          ts: Date.now(),
+          page: location.href,
+          referrer: ref,
+          refHost: host,
+          dest: window.top === window.self ? "document" : "iframe",
+          ua: navigator.userAgent
+        };
+        try { navigator.sendBeacon(url, JSON.stringify(payload)); }
+        catch(e){ new Image().src = url + "?page=" + encodeURIComponent(location.href) + "&referrer=" + encodeURIComponent(ref); }
+      })();
     </script>
   </body>
 </html>
