@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Greece Wildfire Map</title>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.33/esri/themes/light/main.css">
+    <style>
+      html, body { height:100%; margin:0; }
+      #viewDiv { height:100vh; width:100%; }
+
+      /* Credit box, Firewatch logo, white FR on #991a3f */
+      #credit {
+        position:absolute;
+        top:12px; right:12px;
+        background:#991a3f;
+        color:#fff;
+        padding:6px 10px;
+        border-radius:8px;
+        font:12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+        z-index:5;
+        box-shadow:0 1px 6px rgba(0,0,0,.18);
+        display:flex; align-items:center; gap:6px;
+      }
+      #credit .brand {
+        font-size:13px;
+        font-weight:900;
+        text-transform:uppercase;
+        letter-spacing:.5px;
+        line-height:1;
+        background:linear-gradient(90deg,#ff3b3b,#ff9a3b);
+        -webkit-background-clip:text;
+        background-clip:text;
+        color:transparent;
+      }
+      #credit .by { color:#fff; font-weight:700; }
+      #credit a { color:#fff; text-decoration:none; font-weight:700; }
+    </style>
+    <script src="https://js.arcgis.com/4.33/"></script>
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+
+    <!-- credit -->
+    <div id="credit">
+      <span class="brand">Firewatch</span>
+      <span class="by">by <a href="https://www.financialreport.gr" target="_blank" rel="noopener">financialreport.gr</a></span>
+    </div>
+
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/FeatureLayer"
+      ], function (Map, MapView, FeatureLayer) {
+
+        const map = new Map({ basemap: "topo-vector" });
+
+        // Simple circles, big and warm color for stronger detections
+        const dotRenderer = {
+          type: "simple",
+          symbol: {
+            type: "simple-marker",
+            style: "circle",
+            color: [230, 30, 30, 0.95],
+            size: 9,
+            outline: { color: [255,255,255,1], width: 0.6 }
+          },
+          visualVariables: [
+            {
+              type: "size",
+              valueExpression: "IIF(IsEmpty($feature.frp), $feature.brightness, $feature.frp)",
+              stops: [
+                { value: 5,   size: 8 },
+                { value: 15,  size: 10 },
+                { value: 30,  size: 12 },
+                { value: 60,  size: 14 },
+                { value: 120, size: 18 }
+              ]
+            },
+            {
+              type: "color",
+              valueExpression: "IIF(IsEmpty($feature.frp), $feature.brightness, $feature.frp)",
+              stops: [
+                { value: 5,   color: [255, 204, 102, 0.95] },  /* warm yellow */
+                { value: 30,  color: [255, 140,  66, 0.95] },  /* orange */
+                { value: 60,  color: [240,  72,  48, 0.95] },  /* red orange */
+                { value: 120, color: [200,  30,  30, 0.95] }   /* deep red */
+              ]
+            }
+          ]
+        };
+
+        const viirs = new FeatureLayer({
+          portalItem: { id: "dece90af1a0242dcbf0ca36d30276aa3" }, // VIIRS Thermal Hotspots and Fire Activity
+          outFields: ["acq_date","acq_time","brightness","frp","satellite","daynight","confidence"],
+          popupTemplate: {
+            title: "{satellite} hotspot",
+            content: [{ type: "fields", fieldInfos: [
+              { fieldName: "acq_date",  label: "Date" },
+              { fieldName: "acq_time",  label: "Time UTC" },
+              { fieldName: "brightness",label: "Brightness" },
+              { fieldName: "frp",       label: "FRP" },
+              { fieldName: "daynight",  label: "Day or Night" },
+              { fieldName: "confidence",label: "Confidence" }
+            ]}]
+          },
+          renderer: dotRenderer,
+          featureReduction: {
+            type: "cluster",
+            clusterRadius: "34px",
+            labelsVisible: false   // hide the numbers on clusters
+          },
+          refreshInterval: 10 // minutes
+        });
+
+        map.add(viirs);
+
+        const view = new MapView({
+          container: "viewDiv",
+          map,
+          center: [23.7, 39.2],
+          zoom: 8,
+          constraints: { minZoom: 5 }
+        });
+
+        // Place credit in map UI
+        view.ui.add(document.getElementById("credit"), "top-right");
+
+        // Show only last 24 hours, apply at the layer view level
+        view.whenLayerView(viirs).then(function(layerView){
+          const now = new Date();
+          const start = new Date(now.getTime() - 24*60*60*1000);
+          layerView.filter = { timeExtent: { start, end: now } };
+        });
+      });
+    </script>
+  </body>
+</html>
