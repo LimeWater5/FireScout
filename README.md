@@ -1,4 +1,4 @@
-# Greece Wildfire Map 🔥
+# FireScout - Wildfire Map 🔥
 
 An interactive map showing wildfire hotspots across Greece using the VIIRS Thermal Anomalies dataset from NASA FIRMS, served via ArcGIS Living Atlas.
 
